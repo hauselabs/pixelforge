@@ -15,9 +15,9 @@
   "license": "ISC",
   "packageManager": "pnpm@10.29.3",
   "dependencies": {
-    "@surfjs/core": "^0.3.8",
-    "@surfjs/next": "^0.3.8",
-    "@surfjs/react": "^0.3.8",
+    "@surfjs/core": "^0.3.9",
+    "@surfjs/next": "^0.3.9",
+    "@surfjs/react": "^0.3.9",
     "@tailwindcss/postcss": "^4.2.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
