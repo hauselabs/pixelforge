@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { Stage, Layer, Rect, Circle, Text, Line, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useCanvasStore } from '@/lib/store'
@@ -361,9 +361,10 @@ function PreviewShape({ preview }: { preview: DrawingPreview | null }) {
 
 interface CanvasProps {
   stageRef: React.RefObject<Konva.Stage | null>
+  isEmpty?: boolean
 }
 
-export function Canvas({ stageRef }: CanvasProps) {
+export function Canvas({ stageRef, isEmpty = false }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 })
   const [isDrawing, setIsDrawing] = useState(false)
@@ -721,9 +722,36 @@ export function Canvas({ stageRef }: CanvasProps) {
   return (
     <div
       ref={containerRef}
-      className="w-full h-full overflow-hidden canvas-bg"
+      className="w-full h-full overflow-hidden canvas-bg relative"
       style={{ cursor: getCursor() }}
     >
+      {/* Empty state overlay */}
+      {isEmpty && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10"
+          style={{ animation: 'fadeIn 0.3s ease-out' }}
+        >
+          <p
+            className="text-[28px] font-semibold mb-2"
+            style={{
+              letterSpacing: '-0.03em',
+              color: 'rgba(0,0,0,0.12)',
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            Draw something
+          </p>
+          <p
+            className="text-[13px]"
+            style={{
+              color: 'rgba(0,0,0,0.2)',
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            Select a tool and click or drag on the canvas
+          </p>
+        </div>
+      )}
       <Stage
         ref={stageRef}
         width={containerSize.width}

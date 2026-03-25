@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { MousePointer2, Square, Circle, Type, Minus, ZoomIn, ZoomOut } from 'lucide-react'
 import { useCanvasStore } from '@/lib/store'
 import type { Tool } from '@/lib/types'
@@ -11,7 +12,7 @@ interface ToolItem {
   shortcut: string
 }
 
-const TOOLS: ToolItem[] = [
+const DRAW_TOOLS: ToolItem[] = [
   { id: 'select', icon: MousePointer2, label: 'Select', shortcut: 'V' },
   { id: 'rect', icon: Square, label: 'Rectangle', shortcut: 'R' },
   { id: 'circle', icon: Circle, label: 'Circle', shortcut: 'O' },
@@ -25,111 +26,205 @@ interface ToolbarProps {
   onResetZoom: () => void
 }
 
+function useDark() {
+  const [dark, setDark] = useState(false)
+  useEffect(() => {
+    const update = () => setDark(document.documentElement.classList.contains('dark'))
+    update()
+    const obs = new MutationObserver(update)
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => obs.disconnect()
+  }, [])
+  return dark
+}
+
+function ToolBtn({
+  active,
+  onClick,
+  title,
+  children,
+  className = 'w-10 h-10',
+  isDark,
+}: {
+  active?: boolean
+  onClick: () => void
+  title: string
+  children: React.ReactNode
+  className?: string
+  isDark: boolean
+}) {
+  return (
+    <button
+      title={title}
+      onClick={onClick}
+      className={[
+        className,
+        'flex items-center justify-center rounded-xl',
+        'transition-all duration-150 ease-out',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF]',
+        !active && 'hover:scale-[1.05]',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      style={
+        active
+          ? {
+              background: '#0057FF',
+              color: '#ffffff',
+              boxShadow: '0 0 0 1px rgba(0,87,255,0.3), 0 2px 8px rgba(0,87,255,0.35)',
+            }
+          : {
+              background: 'transparent',
+              color: isDark ? '#999' : '#555',
+            }
+      }
+      onMouseEnter={(e) => {
+        if (!active)
+          (e.currentTarget as HTMLButtonElement).style.background = isDark
+            ? 'rgba(255,255,255,0.08)'
+            : 'rgba(0,0,0,0.06)'
+      }}
+      onMouseLeave={(e) => {
+        if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+function VDivider() {
+  return <div className="w-5 h-px bg-black/[0.07] dark:bg-white/[0.08] my-0.5" />
+}
+
+function HDivider() {
+  return <div className="h-5 w-px bg-black/[0.07] dark:bg-white/[0.08] mx-0.5" />
+}
+
+function getPillStyle(isDark: boolean): React.CSSProperties {
+  return isDark
+    ? {
+        background: 'rgba(22, 22, 26, 0.88)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        border: '1px solid rgba(255,255,255,0.07)',
+        boxShadow:
+          '0 4px 24px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.04)',
+      }
+    : {
+        background: 'rgba(255, 255, 255, 0.85)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        border: '1px solid rgba(0,0,0,0.07)',
+        boxShadow:
+          '0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9)',
+      }
+}
+
 export function Toolbar({ onZoomIn, onZoomOut, onResetZoom }: ToolbarProps) {
   const { tool, setTool, stageScale } = useCanvasStore()
+  const isDark = useDark()
   const zoomPercent = Math.round(stageScale * 100)
-
-  const toolBtnBase =
-    'flex items-center justify-center rounded-xl transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF]'
-
-  const toolBtnActive = 'bg-[#0057FF] text-white shadow-sm'
-  const toolBtnIdle =
-    'text-[#555] dark:text-[#999] hover:bg-[#F0F0F0] dark:hover:bg-[#1E1E1E]'
-
-  const pillBase =
-    'bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#2A2A2A] shadow-lg shadow-black/5 dark:shadow-black/25 rounded-2xl p-1.5'
+  const pillStyle = getPillStyle(isDark)
+  const zoomBtnStyle: React.CSSProperties = {
+    color: isDark ? '#888' : '#666',
+  }
 
   return (
     <>
       {/* ── Desktop: vertical pill on the left ── */}
       <div
-        className={`hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 flex-col items-center gap-1 ${pillBase}`}
+        className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 flex-col items-center gap-0.5 p-1.5 rounded-2xl"
+        style={pillStyle}
         role="toolbar"
         aria-label="Drawing tools"
       >
-        {TOOLS.map((t) => (
-          <button
+        {DRAW_TOOLS.map((t) => (
+          <ToolBtn
             key={t.id}
-            title={`${t.label} (${t.shortcut})`}
+            active={tool === t.id}
             onClick={() => setTool(t.id)}
-            className={`w-10 h-10 ${toolBtnBase} ${tool === t.id ? toolBtnActive : toolBtnIdle}`}
+            title={`${t.label} (${t.shortcut})`}
+            isDark={isDark}
           >
             <t.icon size={16} />
-          </button>
+          </ToolBtn>
         ))}
 
-        {/* Divider */}
-        <div className="w-6 h-px bg-[#E5E5E5] dark:bg-[#2A2A2A] my-0.5" />
+        <VDivider />
 
-        {/* Zoom controls */}
-        <button
-          onClick={onZoomOut}
-          title="Zoom out"
-          className={`w-10 h-10 ${toolBtnBase} ${toolBtnIdle}`}
-        >
+        <ToolBtn onClick={onZoomOut} title="Zoom out" isDark={isDark}>
           <ZoomOut size={14} />
-        </button>
+        </ToolBtn>
 
         <button
           onClick={onResetZoom}
           title="Reset zoom (100%)"
-          className={`h-8 px-1 min-w-[40px] flex items-center justify-center rounded-xl transition-all duration-150 font-mono text-[10px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF] ${toolBtnIdle}`}
+          className="h-8 px-1 min-w-[40px] flex items-center justify-center rounded-xl transition-all duration-150 font-mono text-[10px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF]"
+          style={zoomBtnStyle}
+          onMouseEnter={(e) => {
+            ;(e.currentTarget as HTMLButtonElement).style.background = isDark
+              ? 'rgba(255,255,255,0.08)'
+              : 'rgba(0,0,0,0.06)'
+          }}
+          onMouseLeave={(e) => {
+            ;(e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+          }}
         >
           {zoomPercent}%
         </button>
 
-        <button
-          onClick={onZoomIn}
-          title="Zoom in"
-          className={`w-10 h-10 ${toolBtnBase} ${toolBtnIdle}`}
-        >
+        <ToolBtn onClick={onZoomIn} title="Zoom in" isDark={isDark}>
           <ZoomIn size={14} />
-        </button>
+        </ToolBtn>
       </div>
 
-      {/* ── Mobile: horizontal bottom bar ── */}
+      {/* ── Mobile: horizontal pill at bottom ── */}
       <div
-        className={`md:hidden absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 ${pillBase}`}
+        className="md:hidden absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-0.5 p-1.5 rounded-2xl overflow-x-auto max-w-[calc(100vw-32px)]"
+        style={pillStyle}
         role="toolbar"
         aria-label="Drawing tools"
       >
-        {TOOLS.map((t) => (
-          <button
+        {DRAW_TOOLS.map((t) => (
+          <ToolBtn
             key={t.id}
-            title={`${t.label} (${t.shortcut})`}
+            active={tool === t.id}
             onClick={() => setTool(t.id)}
-            className={`w-11 h-11 ${toolBtnBase} ${tool === t.id ? toolBtnActive : toolBtnIdle}`}
+            title={`${t.label} (${t.shortcut})`}
+            className="w-11 h-11"
+            isDark={isDark}
           >
             <t.icon size={16} />
-          </button>
+          </ToolBtn>
         ))}
 
-        {/* Divider */}
-        <div className="h-6 w-px bg-[#E5E5E5] dark:bg-[#2A2A2A] mx-0.5" />
+        <HDivider />
 
-        <button
-          onClick={onZoomOut}
-          title="Zoom out"
-          className={`w-11 h-11 ${toolBtnBase} ${toolBtnIdle}`}
-        >
+        <ToolBtn onClick={onZoomOut} title="Zoom out" className="w-11 h-11" isDark={isDark}>
           <ZoomOut size={14} />
-        </button>
+        </ToolBtn>
 
         <button
           onClick={onResetZoom}
           title="Reset zoom"
-          className={`h-11 px-2 flex items-center justify-center rounded-xl transition-all duration-150 font-mono text-[10px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF] ${toolBtnIdle}`}
+          className="h-11 px-2 flex items-center justify-center rounded-xl transition-all duration-150 font-mono text-[10px] font-medium focus:outline-none"
+          style={zoomBtnStyle}
+          onMouseEnter={(e) => {
+            ;(e.currentTarget as HTMLButtonElement).style.background = isDark
+              ? 'rgba(255,255,255,0.08)'
+              : 'rgba(0,0,0,0.06)'
+          }}
+          onMouseLeave={(e) => {
+            ;(e.currentTarget as HTMLButtonElement).style.background = 'transparent'
+          }}
         >
           {zoomPercent}%
         </button>
 
-        <button
-          onClick={onZoomIn}
-          title="Zoom in"
-          className={`w-11 h-11 ${toolBtnBase} ${toolBtnIdle}`}
-        >
+        <ToolBtn onClick={onZoomIn} title="Zoom in" className="w-11 h-11" isDark={isDark}>
           <ZoomIn size={14} />
-        </button>
+        </ToolBtn>
       </div>
     </>
   )

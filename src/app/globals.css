@@ -29,7 +29,7 @@ html, body {
 
 body {
   font-family: var(--font-sans);
-  background: #FAFAFA;
+  background: #F5F5F3;
   color: #0A0A0A;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -44,35 +44,102 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #D4D4D4;
+  background: rgba(0,0,0,0.12);
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #B0B0B0;
+  background: rgba(0,0,0,0.2);
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #444;
+  background: rgba(255,255,255,0.1);
 }
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: rgba(255,255,255,0.18);
 }
 
-/* Canvas dot grid background */
+/* Canvas dot grid — premium subtle */
 .canvas-bg {
-  background-color: #FAFAFA;
-  background-image: radial-gradient(circle, #CFCFCF 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-color: #F5F5F3;
+  background-image: radial-gradient(circle, #D8D8D4 0.75px, transparent 0.75px);
+  background-size: 20px 20px;
 }
 
 .dark .canvas-bg {
-  background-color: #1a1a1a;
-  background-image: radial-gradient(circle, #2c2c2c 1px, transparent 1px);
+  background-color: #1a1a1c;
+  background-image: radial-gradient(circle, #2a2a2e 0.75px, transparent 0.75px);
+  background-size: 20px 20px;
 }
 
 /* Prop input shared style */
 .prop-input {
   font-family: var(--font-mono);
   font-size: 11px;
+}
+
+/* Frosted glass utility */
+.glass-light {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+.dark .glass-dark {
+  background: rgba(20, 20, 22, 0.82);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+}
+
+/* Range input styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(0,0,0,0.1);
+  outline: none;
+}
+
+.dark input[type="range"] {
+  background: rgba(255,255,255,0.1);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #0057FF;
+  cursor: pointer;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,87,255,0.3);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 1px 6px rgba(0,87,255,0.5);
+}
+
+.dark input[type="range"]::-webkit-slider-thumb {
+  border-color: #1a1a1c;
+}
+
+/* Color input */
+input[type="color"] {
+  -webkit-appearance: none;
+  appearance: none;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
 }
 
 @keyframes pulse {
@@ -87,4 +154,9 @@ body {
 @keyframes slideUp {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 }
