@@ -25,6 +25,7 @@ function GradientRect({ obj, onSelect, onChange, onDragEnd }: ShapeProps) {
   const height = obj.height ?? 80
 
   const sharedProps = {
+    id: obj.id,
     x: obj.x,
     y: obj.y,
     width,
@@ -87,6 +88,7 @@ function GradientCircle({ obj, onSelect, onChange, onDragEnd }: ShapeProps) {
   const radius = obj.radius ?? 50
 
   const sharedProps = {
+    id: obj.id,
     x: obj.x,
     y: obj.y,
     radius,
@@ -192,6 +194,7 @@ function CanvasShape({ obj, isSelected, onSelect, onChange }: CanvasShapeProps) 
   if (obj.type === 'text') {
     return (
       <Text
+        id={obj.id}
         ref={shapeRef as React.RefObject<Konva.Text>}
         x={obj.x}
         y={obj.y}
@@ -221,6 +224,7 @@ function CanvasShape({ obj, isSelected, onSelect, onChange }: CanvasShapeProps) 
     const lineLength = obj.width ?? 100
     return (
       <Line
+        id={obj.id}
         ref={shapeRef as React.RefObject<Konva.Line>}
         x={obj.x}
         y={obj.y}
