@@ -1,27 +1,16 @@
 'use client'
 
-import { Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { Trash2, ChevronRight, ChevronLeft, GripHorizontal } from 'lucide-react'
 import { useCanvasStore } from '@/lib/store'
 import type { CanvasObject } from '@/lib/types'
 
+/* ── Sub-components ───────────────────────────────────────────────────── */
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div
-      style={{
-        padding: '12px 14px',
-        borderBottom: '1px solid #F0F0F0',
-      }}
-    >
-      <div
-        style={{
-          fontSize: 10,
-          fontWeight: 600,
-          color: '#AAAAAA',
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-          marginBottom: 10,
-        }}
-      >
+    <div className="px-3.5 py-3 border-b border-[#F0F0F0] dark:border-[#1E1E1E]">
+      <div className="text-[9px] font-semibold text-[#AAAAAA] dark:text-[#555] tracking-[0.06em] uppercase mb-2.5">
         {title}
       </div>
       {children}
@@ -29,34 +18,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function PropRow({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}) {
+function PropRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        marginBottom: 7,
-        gap: 8,
-      }}
-    >
-      <span
-        style={{
-          fontSize: 11,
-          color: '#888',
-          width: 60,
-          flexShrink: 0,
-          fontWeight: 400,
-        }}
-      >
+    <div className="flex items-center mb-1.5 gap-2">
+      <span className="text-[11px] text-[#888] dark:text-[#666] w-14 flex-shrink-0 font-normal">
         {label}
       </span>
-      <div style={{ flex: 1 }}>{children}</div>
+      <div className="flex-1">{children}</div>
     </div>
   )
 }
@@ -82,17 +50,7 @@ function NumInput({
       max={max}
       step={step}
       onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-      style={{
-        width: '100%',
-        padding: '4px 8px',
-        border: '1px solid #E8E8E8',
-        borderRadius: 5,
-        fontSize: 11,
-        fontFamily: "'JetBrains Mono', monospace",
-        color: '#0A0A0A',
-        background: '#FAFAFA',
-        outline: 'none',
-      }}
+      className="w-full px-2 py-1 border border-[#E8E8E8] dark:border-[#2A2A2A] rounded-md text-[11px] font-mono text-[#0A0A0A] dark:text-[#F0F0F0] bg-[#FAFAFA] dark:bg-[#0E0E0E] outline-none focus:border-[#0057FF] focus:ring-1 focus:ring-[#0057FF]/20 transition-all duration-150"
     />
   )
 }
@@ -100,32 +58,18 @@ function NumInput({
 function ColorInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const isGradient = value?.startsWith('linear-gradient') || value?.startsWith('radial-gradient')
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+    <div className="flex items-center gap-1.5">
       {isGradient ? (
         <div
-          style={{
-            width: 22,
-            height: 22,
-            borderRadius: 4,
-            background: value,
-            border: '1px solid rgba(0,0,0,0.1)',
-            flexShrink: 0,
-          }}
+          className="w-5 h-5 rounded flex-shrink-0 border border-black/10"
+          style={{ background: value }}
         />
       ) : (
         <input
           type="color"
           value={value || '#000000'}
           onChange={(e) => onChange(e.target.value)}
-          style={{
-            width: 22,
-            height: 22,
-            border: '1px solid #E0E0E0',
-            borderRadius: 4,
-            padding: 1,
-            cursor: 'pointer',
-            background: 'none',
-          }}
+          className="w-5 h-5 border border-[#E0E0E0] dark:border-[#2A2A2A] rounded p-0.5 cursor-pointer bg-none flex-shrink-0"
         />
       )}
       <input
@@ -133,133 +77,39 @@ function ColorInput({ value, onChange }: { value: string; onChange: (v: string) 
         value={isGradient ? '(gradient)' : value}
         onChange={(e) => !isGradient && onChange(e.target.value)}
         readOnly={isGradient}
-        style={{
-          flex: 1,
-          padding: '4px 7px',
-          border: '1px solid #E8E8E8',
-          borderRadius: 5,
-          fontSize: 11,
-          fontFamily: "'JetBrains Mono', monospace",
-          color: '#0A0A0A',
-          background: '#FAFAFA',
-          outline: 'none',
-        }}
+        className="flex-1 px-1.5 py-1 border border-[#E8E8E8] dark:border-[#2A2A2A] rounded-md text-[11px] font-mono text-[#0A0A0A] dark:text-[#F0F0F0] bg-[#FAFAFA] dark:bg-[#0E0E0E] outline-none focus:border-[#0057FF] transition-all duration-150"
       />
     </div>
   )
 }
 
-export function PropertiesPanel() {
-  const { objects, selectedId, setSelected, updateObject, removeObject } = useCanvasStore()
-  const obj = objects.find((o) => o.id === selectedId) as CanvasObject | undefined
+/* ── Panel content ───────────────────────────────────────────────────── */
 
-  const update = (updates: Partial<CanvasObject>) => {
-    if (obj) updateObject(obj.id, updates)
-  }
-
-  if (!obj) {
-    return (
-      <aside
-        style={{
-          width: 220,
-          background: '#FFFFFF',
-          borderLeft: '1px solid #EBEBEB',
-          display: 'flex',
-          flexDirection: 'column',
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            padding: '14px',
-            borderBottom: '1px solid #F0F0F0',
-            fontSize: 11,
-            fontWeight: 600,
-            color: '#0A0A0A',
-            letterSpacing: '-0.01em',
-          }}
-        >
-          Properties
-        </div>
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#CCCCCC',
-            fontSize: 11,
-            textAlign: 'center',
-            padding: 20,
-          }}
-        >
-          Select an object to edit its properties
-        </div>
-      </aside>
-    )
-  }
-
+function PanelContent({
+  obj,
+  onUpdate,
+  onDelete,
+}: {
+  obj: CanvasObject
+  onUpdate: (updates: Partial<CanvasObject>) => void
+  onDelete: () => void
+}) {
   return (
-    <aside
-      style={{
-        width: 220,
-        background: '#FFFFFF',
-        borderLeft: '1px solid #EBEBEB',
-        display: 'flex',
-        flexDirection: 'column',
-        flexShrink: 0,
-        overflowY: 'auto',
-      }}
-    >
+    <div className="flex flex-col h-full overflow-y-auto">
       {/* Header */}
-      <div
-        style={{
-          padding: '10px 14px',
-          borderBottom: '1px solid #F0F0F0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
+      <div className="px-3.5 py-2.5 border-b border-[#F0F0F0] dark:border-[#1E1E1E] flex items-center justify-between flex-shrink-0">
         <div>
-          <div style={{ fontSize: 11, fontWeight: 600, color: '#0A0A0A', letterSpacing: '-0.01em' }}>
+          <div className="text-[11px] font-semibold text-[#0A0A0A] dark:text-[#F0F0F0] tracking-tight">
             {obj.type.charAt(0).toUpperCase() + obj.type.slice(1)}
           </div>
-          <div
-            style={{
-              fontSize: 9,
-              color: '#BBB',
-              fontFamily: "'JetBrains Mono', monospace",
-              marginTop: 1,
-            }}
-          >
+          <div className="text-[9px] text-[#BBB] dark:text-[#555] font-mono mt-0.5">
             {obj.id.slice(0, 8)}…
           </div>
         </div>
         <button
-          onClick={() => {
-            removeObject(obj.id)
-            setSelected(null)
-          }}
+          onClick={onDelete}
           title="Delete object"
-          style={{
-            width: 28,
-            height: 28,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: 'none',
-            background: 'transparent',
-            borderRadius: 6,
-            cursor: 'pointer',
-            color: '#FF4545',
-          }}
-          onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.background = '#FFF0F0'
-          }}
-          onMouseLeave={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.background = 'transparent'
-          }}
+          className="w-7 h-7 flex items-center justify-center border-none bg-transparent rounded-md cursor-pointer text-[#FF4545] hover:bg-[#FFF0F0] dark:hover:bg-[#2A1010] transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF4545]"
         >
           <Trash2 size={13} />
         </button>
@@ -268,13 +118,13 @@ export function PropertiesPanel() {
       {/* Position */}
       <Section title="Position">
         <PropRow label="X">
-          <NumInput value={obj.x} onChange={(v) => update({ x: v })} />
+          <NumInput value={obj.x} onChange={(v) => onUpdate({ x: v })} />
         </PropRow>
         <PropRow label="Y">
-          <NumInput value={obj.y} onChange={(v) => update({ y: v })} />
+          <NumInput value={obj.y} onChange={(v) => onUpdate({ y: v })} />
         </PropRow>
         <PropRow label="Rotate">
-          <NumInput value={obj.rotation} onChange={(v) => update({ rotation: v })} min={-360} max={360} />
+          <NumInput value={obj.rotation} onChange={(v) => onUpdate({ rotation: v })} min={-360} max={360} />
         </PropRow>
       </Section>
 
@@ -282,11 +132,11 @@ export function PropertiesPanel() {
       {(obj.type === 'rect' || obj.type === 'line') && (
         <Section title="Size">
           <PropRow label="Width">
-            <NumInput value={obj.width ?? 0} onChange={(v) => update({ width: Math.max(1, v) })} min={1} />
+            <NumInput value={obj.width ?? 0} onChange={(v) => onUpdate({ width: Math.max(1, v) })} min={1} />
           </PropRow>
           {obj.type === 'rect' && (
             <PropRow label="Height">
-              <NumInput value={obj.height ?? 0} onChange={(v) => update({ height: Math.max(1, v) })} min={1} />
+              <NumInput value={obj.height ?? 0} onChange={(v) => onUpdate({ height: Math.max(1, v) })} min={1} />
             </PropRow>
           )}
         </Section>
@@ -295,36 +145,25 @@ export function PropertiesPanel() {
       {obj.type === 'circle' && (
         <Section title="Size">
           <PropRow label="Radius">
-            <NumInput value={obj.radius ?? 50} onChange={(v) => update({ radius: Math.max(1, v) })} min={1} />
+            <NumInput value={obj.radius ?? 50} onChange={(v) => onUpdate({ radius: Math.max(1, v) })} min={1} />
           </PropRow>
         </Section>
       )}
 
       {obj.type === 'text' && (
         <Section title="Text">
-          <div style={{ marginBottom: 7 }}>
+          <div className="mb-1.5">
             <textarea
               value={obj.text ?? ''}
-              onChange={(e) => update({ text: e.target.value })}
+              onChange={(e) => onUpdate({ text: e.target.value })}
               rows={3}
-              style={{
-                width: '100%',
-                padding: '6px 8px',
-                border: '1px solid #E8E8E8',
-                borderRadius: 5,
-                fontSize: 12,
-                color: '#0A0A0A',
-                background: '#FAFAFA',
-                outline: 'none',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-              }}
+              className="w-full px-2 py-1.5 border border-[#E8E8E8] dark:border-[#2A2A2A] rounded-md text-[12px] text-[#0A0A0A] dark:text-[#F0F0F0] bg-[#FAFAFA] dark:bg-[#0E0E0E] outline-none focus:border-[#0057FF] resize-y font-sans transition-all duration-150"
             />
           </div>
           <PropRow label="Size">
             <NumInput
               value={obj.fontSize ?? 24}
-              onChange={(v) => update({ fontSize: Math.max(8, v) })}
+              onChange={(v) => onUpdate({ fontSize: Math.max(8, v) })}
               min={8}
               max={200}
             />
@@ -336,42 +175,34 @@ export function PropertiesPanel() {
       <Section title="Appearance">
         {obj.type !== 'line' && (
           <PropRow label="Fill">
-            <ColorInput value={obj.fill} onChange={(v) => update({ fill: v })} />
+            <ColorInput value={obj.fill} onChange={(v) => onUpdate({ fill: v })} />
           </PropRow>
         )}
         <PropRow label="Stroke">
-          <ColorInput value={obj.stroke || '#000000'} onChange={(v) => update({ stroke: v })} />
+          <ColorInput value={obj.stroke || '#000000'} onChange={(v) => onUpdate({ stroke: v })} />
         </PropRow>
         {(obj.stroke || obj.strokeWidth > 0) && (
           <PropRow label="S.Width">
             <NumInput
               value={obj.strokeWidth}
-              onChange={(v) => update({ strokeWidth: Math.max(0, v) })}
+              onChange={(v) => onUpdate({ strokeWidth: Math.max(0, v) })}
               min={0}
               max={50}
             />
           </PropRow>
         )}
         <PropRow label="Opacity">
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="flex gap-2 items-center">
             <input
               type="range"
               min={0}
               max={1}
               step={0.01}
               value={obj.opacity}
-              onChange={(e) => update({ opacity: parseFloat(e.target.value) })}
-              style={{ flex: 1, accentColor: '#0057FF' }}
+              onChange={(e) => onUpdate({ opacity: parseFloat(e.target.value) })}
+              className="flex-1 accent-[#0057FF]"
             />
-            <span
-              style={{
-                fontSize: 10,
-                fontFamily: "'JetBrains Mono', monospace",
-                color: '#888',
-                width: 28,
-                textAlign: 'right',
-              }}
-            >
+            <span className="text-[10px] font-mono text-[#888] dark:text-[#666] w-7 text-right">
               {Math.round(obj.opacity * 100)}%
             </span>
           </div>
@@ -379,16 +210,115 @@ export function PropertiesPanel() {
       </Section>
 
       {/* Object ID */}
-      <div
-        style={{
-          padding: '10px 14px',
-          marginTop: 'auto',
-        }}
-      >
-        <div style={{ fontSize: 9, color: '#CCC', fontFamily: "'JetBrains Mono', monospace" }}>
-          ID: {obj.id}
-        </div>
+      <div className="px-3.5 py-2.5 mt-auto">
+        <div className="text-[9px] text-[#CCC] dark:text-[#444] font-mono">ID: {obj.id}</div>
       </div>
-    </aside>
+    </div>
+  )
+}
+
+function EmptyState() {
+  return (
+    <div className="flex flex-col h-full">
+      <div className="px-3.5 py-2.5 border-b border-[#F0F0F0] dark:border-[#1E1E1E] text-[11px] font-semibold text-[#0A0A0A] dark:text-[#F0F0F0] tracking-tight flex-shrink-0">
+        Properties
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center text-center px-4 gap-3">
+        <div className="w-10 h-10 rounded-xl bg-[#F5F5F5] dark:bg-[#1A1A1A] flex items-center justify-center">
+          <div className="w-5 h-5 rounded border-2 border-[#D0D0D0] dark:border-[#3A3A3A]" />
+        </div>
+        <p className="text-[11px] text-[#CCC] dark:text-[#555] leading-relaxed">
+          Select an object<br />to edit its properties
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/* ── Main export ──────────────────────────────────────────────────────── */
+
+export function PropertiesPanel() {
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(true)
+  const { objects, selectedId, setSelected, updateObject, removeObject } = useCanvasStore()
+  const obj = objects.find((o) => o.id === selectedId) as CanvasObject | undefined
+
+  const handleDelete = () => {
+    if (!obj) return
+    removeObject(obj.id)
+    setSelected(null)
+  }
+
+  const handleUpdate = (updates: Partial<CanvasObject>) => {
+    if (obj) updateObject(obj.id, updates)
+  }
+
+  return (
+    <>
+      {/* ── Desktop: collapsible right panel ── */}
+      <div
+        className={[
+          'hidden md:flex absolute top-2 right-2 bottom-2 z-20 flex-col',
+          'bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#2A2A2A]',
+          'rounded-xl shadow-lg shadow-black/5 dark:shadow-black/20',
+          'transition-all duration-200 ease-out overflow-hidden',
+          collapsed ? 'w-8' : 'w-[220px]',
+        ].join(' ')}
+      >
+        {/* Collapse toggle — sits on the left edge */}
+        <button
+          onClick={() => setCollapsed((c) => !c)}
+          title={collapsed ? 'Expand panel' : 'Collapse panel'}
+          className={[
+            'absolute top-1/2 -translate-y-1/2 z-10',
+            'w-5 h-5 flex items-center justify-center',
+            'bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#2A2A2A]',
+            'rounded-full text-[#888] dark:text-[#666] hover:text-[#555] dark:hover:text-[#999]',
+            'transition-all duration-150 shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF]',
+            collapsed ? 'left-1.5' : '-left-2.5',
+          ].join(' ')}
+        >
+          {collapsed ? <ChevronLeft size={11} /> : <ChevronRight size={11} />}
+        </button>
+
+        {/* Panel content */}
+        {!collapsed && (
+          <div className="flex-1 overflow-hidden">
+            {obj ? (
+              <PanelContent obj={obj} onUpdate={handleUpdate} onDelete={handleDelete} />
+            ) : (
+              <EmptyState />
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Mobile: bottom drawer (shown when object selected) ── */}
+      {selectedId && obj && (
+        <div
+          className={[
+            'md:hidden absolute bottom-20 left-2 right-2 z-30',
+            'bg-white dark:bg-[#141414] border border-[#E5E5E5] dark:border-[#2A2A2A]',
+            'rounded-2xl shadow-xl shadow-black/10 dark:shadow-black/30',
+            'transition-transform duration-200 ease-out',
+            mobileOpen ? 'translate-y-0' : 'translate-y-[calc(100%+5rem)]',
+          ].join(' ')}
+          style={{ animation: 'slideUp 0.2s ease-out' }}
+        >
+          {/* Drawer handle */}
+          <div
+            className="flex items-center justify-center py-2 cursor-pointer"
+            onClick={() => setMobileOpen((o) => !o)}
+          >
+            <GripHorizontal size={16} className="text-[#CCC] dark:text-[#444]" />
+          </div>
+
+          {/* Content — max height with scroll */}
+          <div className="max-h-[45vh] overflow-y-auto pb-4">
+            <PanelContent obj={obj} onUpdate={handleUpdate} onDelete={handleDelete} />
+          </div>
+        </div>
+      )}
+    </>
   )
 }

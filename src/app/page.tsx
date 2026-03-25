@@ -1,13 +1,12 @@
 'use client'
 
-import { useRef, useCallback, useEffect } from 'react'
+import { useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
 import type Konva from 'konva'
 
 import { TopBar } from '@/components/TopBar'
 import { Toolbar } from '@/components/Toolbar'
 import { PropertiesPanel } from '@/components/PropertiesPanel'
-import { BottomBar } from '@/components/BottomBar'
 import { useCanvasStore } from '@/lib/store'
 
 // Dynamic import for react-konva Canvas — no SSR (Konva requires DOM)
@@ -16,24 +15,10 @@ const Canvas = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#E8E8E8',
-        }}
-      >
+      <div className="flex-1 flex items-center justify-center bg-[#FAFAFA] dark:bg-[#1a1a1a]">
         <div
-          style={{
-            width: 32,
-            height: 32,
-            border: '2px solid #E0E0E0',
-            borderTopColor: '#0057FF',
-            borderRadius: '50%',
-            animation: 'spin 0.7s linear infinite',
-          }}
+          className="w-8 h-8 rounded-full border-2 border-[#E0E0E0] dark:border-[#2A2A2A] border-t-[#0057FF]"
+          style={{ animation: 'spin 0.7s linear infinite' }}
         />
       </div>
     ),
@@ -42,31 +27,43 @@ const Canvas = dynamic(
 
 // Collaborate mode wrapper — dynamic to avoid SSR issues with SurfProvider
 const CollaborateWrapper = dynamic(
-  () => import('@/components/CollaborateWrapper').then((mod) => mod.CollaborateWrapper),
+  () =>
+    import('@/components/CollaborateWrapper').then((mod) => mod.CollaborateWrapper),
   { ssr: false }
 )
 
 export default function PixelForgePage() {
   const stageRef = useRef<Konva.Stage | null>(null)
-  const { mode, stageScale, setStageScale, setStagePos, stagePos, connectionStatus } = useCanvasStore()
+  const { mode, stageScale, setStageScale, setStagePos, connectionStatus } =
+    useCanvasStore()
 
   const handleExport = useCallback(() => {
     const stage = stageRef.current
     if (!stage) return
 
-    // Temporarily hide transformer for export
+    // Hide transformer for clean export
     const transformer = stage.findOne('Transformer')
     if (transformer) transformer.hide()
     stage.batchDraw()
 
-    const dataURL = stage.toDataURL({
-      mimeType: 'image/png',
-      quality: 1,
-      pixelRatio: 2,
-    })
+    // Export with explicit white background
+    const stageCanvas = stage.toCanvas({ pixelRatio: 2 })
+    const exportCanvas = document.createElement('canvas')
+    exportCanvas.width = stageCanvas.width
+    exportCanvas.height = stageCanvas.height
+    const ctx = exportCanvas.getContext('2d')
+    if (ctx) {
+      ctx.fillStyle = '#FFFFFF'
+      ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height)
+      ctx.drawImage(stageCanvas, 0, 0)
+    }
 
     if (transformer) transformer.show()
     stage.batchDraw()
+
+    const dataURL = ctx
+      ? exportCanvas.toDataURL('image/png')
+      : stage.toDataURL({ mimeType: 'image/png', quality: 1, pixelRatio: 2 })
 
     const link = document.createElement('a')
     link.href = dataURL
@@ -90,47 +87,30 @@ export default function PixelForgePage() {
   const canvasEl = <Canvas stageRef={stageRef} />
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        overflow: 'hidden',
-        background: '#FAFAFA',
-      }}
-    >
+    <div className="flex flex-col h-screen overflow-hidden bg-[#FAFAFA] dark:bg-[#0A0A0A]">
       <TopBar onExport={handleExport} connectionStatus={connectionStatus} />
 
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          overflow: 'hidden',
-        }}
-      >
-        <Toolbar />
+      {/* Canvas area — full width, floating UI elements overlaid */}
+      <div className="flex-1 relative overflow-hidden">
+        {/* Canvas fills entire area */}
+        <div className="absolute inset-0">
+          {mode === 'collaborate' ? (
+            <CollaborateWrapper>{canvasEl}</CollaborateWrapper>
+          ) : (
+            canvasEl
+          )}
+        </div>
 
-        {/* Main canvas area */}
-        {mode === 'collaborate' ? (
-          <CollaborateWrapper>{canvasEl}</CollaborateWrapper>
-        ) : (
-          canvasEl
-        )}
+        {/* Floating toolbar (left on desktop, bottom on mobile) */}
+        <Toolbar
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onResetZoom={handleResetZoom}
+        />
 
+        {/* Floating properties panel (right side, collapsible) */}
         <PropertiesPanel />
       </div>
-
-      <BottomBar
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onResetZoom={handleResetZoom}
-      />
-
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   )
 }

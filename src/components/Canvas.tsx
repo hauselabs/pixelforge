@@ -1,18 +1,15 @@
 'use client'
 
 import { useRef, useState, useEffect, useCallback } from 'react'
-import { Stage, Layer, Rect, Circle, Text, Line, Transformer, Group } from 'react-konva'
+import { Stage, Layer, Rect, Circle, Text, Line, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useCanvasStore } from '@/lib/store'
 import type { CanvasObject } from '@/lib/types'
-import { parseGradient, isGradient } from '@/lib/types'
+import { parseGradient } from '@/lib/types'
 
 const MIN_SCALE = 0.1
 const MAX_SCALE = 20
 const ZOOM_FACTOR = 1.12
-
-// Render a gradient on a canvas2d context for Konva fillPatternImage workaround
-// Instead, we pass linearGradient/radialGradient directly to Konva props
 
 interface ShapeProps {
   obj: CanvasObject
@@ -22,13 +19,7 @@ interface ShapeProps {
   onDragEnd: (x: number, y: number) => void
 }
 
-function GradientRect({
-  obj,
-  isSelected,
-  onSelect,
-  onChange,
-  onDragEnd,
-}: ShapeProps) {
+function GradientRect({ obj, onSelect, onChange, onDragEnd }: ShapeProps) {
   const gradient = parseGradient(obj.fill)
   const width = obj.width ?? 100
   const height = obj.height ?? 80
@@ -91,13 +82,7 @@ function GradientRect({
   return <Rect {...sharedProps} fill={obj.fill} />
 }
 
-function GradientCircle({
-  obj,
-  isSelected,
-  onSelect,
-  onChange,
-  onDragEnd,
-}: ShapeProps) {
+function GradientCircle({ obj, onSelect, onChange, onDragEnd }: ShapeProps) {
   const gradient = parseGradient(obj.fill)
   const radius = obj.radius ?? 50
 
@@ -165,19 +150,9 @@ interface CanvasShapeProps {
 
 function CanvasShape({ obj, isSelected, onSelect, onChange }: CanvasShapeProps) {
   const shapeRef = useRef<Konva.Shape>(null)
-  const transformerRef = useRef<Konva.Transformer>(null)
-
-  useEffect(() => {
-    if (isSelected && transformerRef.current && shapeRef.current) {
-      transformerRef.current.nodes([shapeRef.current])
-      transformerRef.current.getLayer()?.batchDraw()
-    }
-  }, [isSelected])
 
   const handleDragEnd = useCallback(
-    (x: number, y: number) => {
-      onChange({ x, y })
-    },
+    (x: number, y: number) => onChange({ x, y }),
     [onChange]
   )
 
@@ -274,7 +249,6 @@ function CanvasShape({ obj, isSelected, onSelect, onChange }: CanvasShapeProps) 
   return null
 }
 
-// Transformer layer — renders selection box around selected shape
 function SelectionTransformer({ selectedId }: { selectedId: string | null }) {
   const transformerRef = useRef<Konva.Transformer>(null)
   const { objects, updateObject } = useCanvasStore()
@@ -320,7 +294,6 @@ function SelectionTransformer({ selectedId }: { selectedId: string | null }) {
   )
 }
 
-// Preview shape while drawing
 interface DrawingPreview {
   type: 'rect' | 'circle' | 'text' | 'line'
   x: number
@@ -448,12 +421,6 @@ export function Canvas({ stageRef }: CanvasProps) {
         }
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
-        e.preventDefault()
-        // Select all not implemented — just deselect
-      }
-
-      // Tool shortcuts
       if (!e.ctrlKey && !e.metaKey && !e.altKey) {
         const toolMap: Record<string, string> = {
           v: 'select',
@@ -463,7 +430,9 @@ export function Canvas({ stageRef }: CanvasProps) {
           l: 'line',
         }
         if (toolMap[e.key.toLowerCase()]) {
-          useCanvasStore.getState().setTool(toolMap[e.key.toLowerCase()] as 'select' | 'rect' | 'circle' | 'text' | 'line')
+          useCanvasStore
+            .getState()
+            .setTool(toolMap[e.key.toLowerCase()] as 'select' | 'rect' | 'circle' | 'text' | 'line')
         }
       }
     }
@@ -494,9 +463,10 @@ export function Canvas({ stageRef }: CanvasProps) {
       if (!pointer) return
 
       const scaleBy = ZOOM_FACTOR
-      const newScale = e.evt.deltaY < 0
-        ? Math.min(MAX_SCALE, oldScale * scaleBy)
-        : Math.max(MIN_SCALE, oldScale / scaleBy)
+      const newScale =
+        e.evt.deltaY < 0
+          ? Math.min(MAX_SCALE, oldScale * scaleBy)
+          : Math.max(MIN_SCALE, oldScale / scaleBy)
 
       const mousePointTo = {
         x: (pointer.x - stagePos.x) / oldScale,
@@ -516,7 +486,6 @@ export function Canvas({ stageRef }: CanvasProps) {
 
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
-      // Middle-click pan
       if (e.evt.button === 1) {
         e.evt.preventDefault()
         isPanning.current = true
@@ -526,21 +495,18 @@ export function Canvas({ stageRef }: CanvasProps) {
         return
       }
 
-      // Right-click — deselect
       if (e.evt.button === 2) {
         setSelected(null)
         return
       }
 
       if (tool === 'select') {
-        // Clicking on stage background deselects
         if (e.target === e.target.getStage()) {
           setSelected(null)
         }
         return
       }
 
-      // Start drawing
       const pos = getStagePointerPosition()
       setDrawStart(pos)
       setIsDrawing(true)
@@ -557,7 +523,6 @@ export function Canvas({ stageRef }: CanvasProps) {
 
   const handleMouseMove = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
-      // Pan with middle mouse
       if (isPanning.current) {
         const stage = stageRef.current
         const pointer = stage?.getPointerPosition()
@@ -604,11 +569,9 @@ export function Canvas({ stageRef }: CanvasProps) {
       setIsDrawing(false)
       setDrawPreview(null)
 
-      // For tiny drags (click-like behavior), create a default-sized shape
       const isTinyDrag = Math.abs(dx) < 3 && Math.abs(dy) < 3
 
       if (isTinyDrag) {
-        // Create default-sized shapes at click position
         if (tool === 'rect') {
           const obj: CanvasObject = {
             id: crypto.randomUUID(),
@@ -675,7 +638,6 @@ export function Canvas({ stageRef }: CanvasProps) {
         return
       }
 
-      // Create object from drag
       if (tool === 'rect') {
         const x = Math.min(drawStart.x, pos.x)
         const y = Math.min(drawStart.y, pos.y)
@@ -746,7 +708,7 @@ export function Canvas({ stageRef }: CanvasProps) {
     [isDrawing, tool, drawStart, getStagePointerPosition, addObject, setSelected]
   )
 
-  const getCursor = () => {
+  const getCursor = (): string => {
     if (isPanning.current) return 'grabbing'
     if (tool === 'select') return 'default'
     return 'crosshair'
@@ -755,12 +717,8 @@ export function Canvas({ stageRef }: CanvasProps) {
   return (
     <div
       ref={containerRef}
-      style={{
-        flex: 1,
-        overflow: 'hidden',
-        background: '#E8E8E8',
-        cursor: getCursor(),
-      }}
+      className="w-full h-full overflow-hidden canvas-bg"
+      style={{ cursor: getCursor() }}
     >
       <Stage
         ref={stageRef}
@@ -778,17 +736,6 @@ export function Canvas({ stageRef }: CanvasProps) {
         onTouchMove={handleMouseMove as unknown as (e: Konva.KonvaEventObject<TouchEvent>) => void}
         onTouchEnd={handleMouseUp as unknown as (e: Konva.KonvaEventObject<TouchEvent>) => void}
       >
-        {/* Background layer — dot grid */}
-        <Layer listening={false}>
-          <Rect
-            x={-10000 / stageScale - stagePos.x / stageScale}
-            y={-10000 / stageScale - stagePos.y / stageScale}
-            width={20000 / stageScale + containerSize.width / stageScale}
-            height={20000 / stageScale + containerSize.height / stageScale}
-            fill="#FFFFFF"
-          />
-        </Layer>
-
         {/* Objects layer */}
         <Layer>
           {objects.map((obj) => (

@@ -4,12 +4,14 @@ import type { CanvasObject, Tool, Mode } from './types'
 const MAX_HISTORY = 50
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'reconnecting'
+export type Theme = 'light' | 'dark' | 'system'
 
 interface CanvasStore {
   objects: CanvasObject[]
   selectedId: string | null
   tool: Tool
   mode: Mode
+  theme: Theme
   history: CanvasObject[][]
   historyIndex: number
   stageScale: number
@@ -22,6 +24,7 @@ interface CanvasStore {
   setSelected: (id: string | null) => void
   setTool: (tool: Tool) => void
   setMode: (mode: Mode) => void
+  setTheme: (theme: Theme) => void
   clearCanvas: () => void
   setObjects: (objects: CanvasObject[]) => void
   undo: () => void
@@ -37,6 +40,7 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   selectedId: null,
   tool: 'select',
   mode: 'local',
+  theme: 'system',
   history: [[]],
   historyIndex: 0,
   stageScale: 1,
@@ -47,7 +51,6 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     const { history, historyIndex } = get()
     const newHistory = history.slice(0, historyIndex + 1)
     newHistory.push([...objects])
-    // Cap history size
     if (newHistory.length > MAX_HISTORY) newHistory.shift()
     set({
       history: newHistory,
@@ -62,11 +65,12 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     set({ objects: newObjects })
   },
 
-  updateObject: (id, updates) => set((state) => ({
-    objects: state.objects.map((obj) =>
-      obj.id === id ? { ...obj, ...updates } : obj
-    ),
-  })),
+  updateObject: (id, updates) =>
+    set((state) => ({
+      objects: state.objects.map((obj) =>
+        obj.id === id ? { ...obj, ...updates } : obj
+      ),
+    })),
 
   removeObject: (id) => {
     const { objects, pushHistory } = get()
@@ -79,10 +83,9 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
   },
 
   setSelected: (id) => set({ selectedId: id }),
-
   setTool: (tool) => set({ tool }),
-
   setMode: (mode) => set({ mode }),
+  setTheme: (theme) => set({ theme }),
 
   clearCanvas: () => {
     const { pushHistory } = get()
@@ -96,21 +99,14 @@ export const useCanvasStore = create<CanvasStore>((set, get) => ({
     const { historyIndex, history } = get()
     if (historyIndex <= 0) return
     const newIndex = historyIndex - 1
-    set({
-      objects: [...history[newIndex]],
-      historyIndex: newIndex,
-      selectedId: null,
-    })
+    set({ objects: [...history[newIndex]], historyIndex: newIndex, selectedId: null })
   },
 
   redo: () => {
     const { historyIndex, history } = get()
     if (historyIndex >= history.length - 1) return
     const newIndex = historyIndex + 1
-    set({
-      objects: [...history[newIndex]],
-      historyIndex: newIndex,
-    })
+    set({ objects: [...history[newIndex]], historyIndex: newIndex })
   },
 
   setStageScale: (scale) => set({ stageScale: scale }),
