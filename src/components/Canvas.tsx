@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
+import { useRef, useState, useEffect, useCallback } from 'react'
 import { Stage, Layer, Rect, Circle, Text, Line, Transformer } from 'react-konva'
 import type Konva from 'konva'
 import { useCanvasStore } from '@/lib/store'
@@ -364,8 +364,21 @@ interface CanvasProps {
   isEmpty?: boolean
 }
 
+function useIsDark() {
+  const [dark, setDark] = useState(false)
+  useEffect(() => {
+    const update = () => setDark(document.documentElement.classList.contains('dark'))
+    update()
+    const obs = new MutationObserver(update)
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => obs.disconnect()
+  }, [])
+  return dark
+}
+
 export function Canvas({ stageRef, isEmpty = false }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const isDark = useIsDark()
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 })
   const [isDrawing, setIsDrawing] = useState(false)
   const [drawStart, setDrawStart] = useState({ x: 0, y: 0 })
@@ -735,7 +748,7 @@ export function Canvas({ stageRef, isEmpty = false }: CanvasProps) {
             className="text-[28px] font-semibold mb-2"
             style={{
               letterSpacing: '-0.03em',
-              color: 'rgba(0,0,0,0.12)',
+              color: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.12)',
               fontFamily: 'Inter, sans-serif',
             }}
           >
@@ -744,7 +757,7 @@ export function Canvas({ stageRef, isEmpty = false }: CanvasProps) {
           <p
             className="text-[13px]"
             style={{
-              color: 'rgba(0,0,0,0.2)',
+              color: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.2)',
               fontFamily: 'Inter, sans-serif',
             }}
           >

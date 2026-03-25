@@ -34,7 +34,7 @@ const CollaborateWrapper = dynamic(
 
 export default function PixelForgePage() {
   const stageRef = useRef<Konva.Stage | null>(null)
-  const { mode, stageScale, setStageScale, setStagePos, connectionStatus } =
+  const { mode, stageScale, setStageScale, setStagePos, connectionStatus, objects } =
     useCanvasStore()
 
   const handleExport = useCallback(() => {
@@ -84,7 +84,7 @@ export default function PixelForgePage() {
     setStagePos({ x: 0, y: 0 })
   }, [setStageScale, setStagePos])
 
-  const canvasEl = <Canvas stageRef={stageRef} />
+  const canvasEl = <Canvas stageRef={stageRef} isEmpty={objects.length === 0} />
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#FAFAFA] dark:bg-[#0A0A0A]">
