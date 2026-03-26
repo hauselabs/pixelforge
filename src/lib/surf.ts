@@ -4,6 +4,11 @@ import type { CanvasObject } from './types'
 // In-memory canvas state for collaborative mode (server-side)
 let canvasState: CanvasObject[] = []
 
+/** Get current canvas state — used by export endpoint */
+export function getCanvasState(): CanvasObject[] {
+  return canvasState
+}
+
 // Surf instance — initialized lazily
 let _surf: SurfInstance | null = null
 
@@ -115,14 +120,35 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
     },
 
     'canvas.export': {
-      description: 'Export the full canvas state as a JSON snapshot with metadata. Use this to save or reconstruct a design.',
+      description: 'Export the canvas as a PNG image. Returns a download URL. Use curl to save: curl -o design.png <pngUrl>',
+      params: {
+        width: { type: 'number', required: false, default: 1440, description: 'Export width in pixels' },
+        height: { type: 'number', required: false, default: 900, description: 'Export height in pixels' },
+        dark: { type: 'boolean', required: false, default: false, description: 'Use dark background' },
+        format: { type: 'string', required: false, default: 'png', description: '"png" for image URL, "json" for raw data' },
+      },
       hints: { idempotent: true, sideEffects: false },
-      run: async () => {
+      run: async (params) => {
+        const width = (params.width as number) || 1440
+        const height = (params.height as number) || 900
+        const dark = params.dark === true
+
+        if (params.format === 'json') {
+          return {
+            format: 'pixelforge-v2',
+            exportedAt: new Date().toISOString(),
+            objectCount: canvasState.length,
+            objects: canvasState.map((obj) => ({ ...obj })),
+          }
+        }
+
+        const qs = `width=${width}&height=${height}${dark ? '&dark=true' : ''}`
+
         return {
-          format: 'pixelforge-v2',
-          exportedAt: new Date().toISOString(),
           objectCount: canvasState.length,
-          objects: canvasState.map((obj) => ({ ...obj })),
+          exportedAt: new Date().toISOString(),
+          downloadPath: `/api/export?${qs}`,
+          hint: `Download PNG with: curl -o design.png "https://pixelforge-pearl.vercel.app/api/export?${qs}"`,
         }
       },
     },
