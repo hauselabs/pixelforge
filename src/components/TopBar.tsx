@@ -16,7 +16,7 @@ function PFLogo() {
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient id="pf-grad" x1="0" y1="0" x2="22" y2="22" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#0057FF" />
+          <stop stopColor="#2563EB" />
           <stop offset="1" stopColor="#00C9B1" />
         </linearGradient>
       </defs>
@@ -108,7 +108,7 @@ export function TopBar({ onExport, connectionStatus = 'disconnected' }: TopBarPr
           title="Undo (Ctrl+Z)"
           className={[
             'w-7 h-7 flex items-center justify-center rounded-md transition-all duration-150',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF]',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]',
             canUndo
               ? 'text-[#555] dark:text-[#888] hover:bg-black/[0.05] dark:hover:bg-white/[0.06] cursor-pointer'
               : 'text-[#CCC] dark:text-[#3a3a3a] cursor-not-allowed',
@@ -122,7 +122,7 @@ export function TopBar({ onExport, connectionStatus = 'disconnected' }: TopBarPr
           title="Redo (Ctrl+Shift+Z)"
           className={[
             'w-7 h-7 flex items-center justify-center rounded-md transition-all duration-150',
-            'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF]',
+            'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]',
             canRedo
               ? 'text-[#555] dark:text-[#888] hover:bg-black/[0.05] dark:hover:bg-white/[0.06] cursor-pointer'
               : 'text-[#CCC] dark:text-[#3a3a3a] cursor-not-allowed',
@@ -160,7 +160,7 @@ export function TopBar({ onExport, connectionStatus = 'disconnected' }: TopBarPr
             onClick={() => setMode(m)}
             className={[
               'relative z-10 px-3 py-1 rounded-[6px] text-[11px] font-medium transition-all duration-150',
-              'flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF]',
+              'flex items-center gap-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]',
               mode === m
                 ? 'text-[#0A0A0A] dark:text-[#F0F0F0]'
                 : 'text-[#999] dark:text-[#555] hover:text-[#666] dark:hover:text-[#888]',
@@ -171,7 +171,7 @@ export function TopBar({ onExport, connectionStatus = 'disconnected' }: TopBarPr
                 size={10}
                 className={
                   mode === 'collaborate'
-                    ? 'text-[#0057FF] fill-[#0057FF]'
+                    ? 'text-[#2563EB] fill-[#2563EB]'
                     : 'text-[#BBB] dark:text-[#444]'
                 }
               />
@@ -217,7 +217,7 @@ export function TopBar({ onExport, connectionStatus = 'disconnected' }: TopBarPr
       <button
         onClick={toggleDarkMode}
         title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-        className="w-7 h-7 flex items-center justify-center rounded-md transition-all duration-150 text-[#666] dark:text-[#888] hover:bg-black/[0.05] dark:hover:bg-white/[0.06] mr-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF]"
+        className="w-7 h-7 flex items-center justify-center rounded-md transition-all duration-150 text-[#666] dark:text-[#888] hover:bg-black/[0.05] dark:hover:bg-white/[0.06] mr-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
       >
         {isDark ? <Sun size={14} /> : <Moon size={14} />}
       </button>
@@ -225,11 +225,11 @@ export function TopBar({ onExport, connectionStatus = 'disconnected' }: TopBarPr
       {/* Export — subtle, not loud */}
       <button
         onClick={onExport}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF] focus-visible:ring-offset-1"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-1"
         style={{
           background: isDark
             ? 'rgba(0,87,255,0.15)'
-            : '#0057FF',
+            : '#2563EB',
           color: isDark ? '#6699ff' : '#ffffff',
           border: isDark ? '1px solid rgba(0,87,255,0.25)' : 'none',
         }}
@@ -237,7 +237,7 @@ export function TopBar({ onExport, connectionStatus = 'disconnected' }: TopBarPr
           if (!isDark) (e.currentTarget as HTMLButtonElement).style.background = '#0046D4'
         }}
         onMouseLeave={(e) => {
-          if (!isDark) (e.currentTarget as HTMLButtonElement).style.background = '#0057FF'
+          if (!isDark) (e.currentTarget as HTMLButtonElement).style.background = '#2563EB'
         }}
       >
         <Download size={12} />

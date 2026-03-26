@@ -6,10 +6,11 @@ import type Konva from 'konva'
 
 import { TopBar } from '@/components/TopBar'
 import { Toolbar } from '@/components/Toolbar'
+import { BottomBar } from '@/components/BottomBar'
 import { PropertiesPanel } from '@/components/PropertiesPanel'
 import { useCanvasStore } from '@/lib/store'
 
-// Dynamic import for react-konva Canvas — no SSR (Konva requires DOM)
+// Dynamic imports — no SSR (Konva requires DOM)
 const Canvas = dynamic(
   () => import('@/components/Canvas').then((mod) => mod.Canvas),
   {
@@ -17,7 +18,7 @@ const Canvas = dynamic(
     loading: () => (
       <div className="flex-1 flex items-center justify-center bg-[#FAFAFA] dark:bg-[#1a1a1a]">
         <div
-          className="w-8 h-8 rounded-full border-2 border-[#E0E0E0] dark:border-[#2A2A2A] border-t-[#0057FF]"
+          className="w-8 h-8 rounded-full border-2 border-[#E0E0E0] dark:border-[#2A2A2A] border-t-[#2563EB]"
           style={{ animation: 'spin 0.7s linear infinite' }}
         />
       </div>
@@ -25,10 +26,14 @@ const Canvas = dynamic(
   }
 )
 
-// Collaborate mode wrapper — dynamic to avoid SSR issues with SurfProvider
 const CollaborateWrapper = dynamic(
   () =>
     import('@/components/CollaborateWrapper').then((mod) => mod.CollaborateWrapper),
+  { ssr: false }
+)
+
+const SurfBadgeWrapper = dynamic(
+  () => import('@/components/SurfBadgeWrapper').then((mod) => mod.SurfBadgeWrapper),
   { ssr: false }
 )
 
@@ -41,12 +46,10 @@ export default function PixelForgePage() {
     const stage = stageRef.current
     if (!stage) return
 
-    // Hide transformer for clean export
     const transformer = stage.findOne('Transformer')
     if (transformer) transformer.hide()
     stage.batchDraw()
 
-    // Export with explicit white background
     const stageCanvas = stage.toCanvas({ pixelRatio: 2 })
     const exportCanvas = document.createElement('canvas')
     exportCanvas.width = stageCanvas.width
@@ -90,9 +93,8 @@ export default function PixelForgePage() {
     <div className="flex flex-col h-screen overflow-hidden bg-[#FAFAFA] dark:bg-[#0A0A0A]">
       <TopBar onExport={handleExport} connectionStatus={connectionStatus} />
 
-      {/* Canvas area — full width, floating UI elements overlaid */}
+      {/* Canvas area */}
       <div className="flex-1 relative overflow-hidden">
-        {/* Canvas fills entire area */}
         <div className="absolute inset-0">
           {mode === 'collaborate' ? (
             <CollaborateWrapper>{canvasEl}</CollaborateWrapper>
@@ -101,16 +103,23 @@ export default function PixelForgePage() {
           )}
         </div>
 
-        {/* Floating toolbar (left on desktop, bottom on mobile) */}
         <Toolbar
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onResetZoom={handleResetZoom}
         />
 
-        {/* Floating properties panel (right side, collapsible) */}
         <PropertiesPanel />
       </div>
+
+      <BottomBar
+        onZoomIn={handleZoomIn}
+        onZoomOut={handleZoomOut}
+        onResetZoom={handleResetZoom}
+      />
+
+      {/* Surf Badge */}
+      <SurfBadgeWrapper />
     </div>
   )
 }

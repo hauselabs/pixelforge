@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
 import { useCanvasStore } from '@/lib/store'
 
@@ -11,22 +12,50 @@ interface BottomBarProps {
 
 const TOOL_LABELS: Record<string, string> = {
   select: 'Select',
+  hand: 'Hand',
   rect: 'Rectangle',
   circle: 'Circle',
   text: 'Text',
   line: 'Line',
+  frame: 'Frame',
+}
+
+function useDark() {
+  const [dark, setDark] = useState(false)
+  useEffect(() => {
+    const update = () => setDark(document.documentElement.classList.contains('dark'))
+    update()
+    const obs = new MutationObserver(update)
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    return () => obs.disconnect()
+  }, [])
+  return dark
 }
 
 export function BottomBar({ onZoomIn, onZoomOut, onResetZoom }: BottomBarProps) {
   const { tool, stageScale, objects, selectedId } = useCanvasStore()
+  const isDark = useDark()
   const zoomPercent = Math.round(stageScale * 100)
+
+  const bg = isDark
+    ? 'linear-gradient(180deg, #18181b 0%, #111113 100%)'
+    : '#FFFFFF'
+  const border = isDark
+    ? '1px solid rgba(255,255,255,0.06)'
+    : '1px solid #EBEBEB'
+  const labelColor = isDark ? '#555' : '#CCC'
+  const valueColor = isDark ? '#aaa' : '#555'
+  const mutedColor = isDark ? '#666' : '#999'
+  const dividerColor = isDark ? 'rgba(255,255,255,0.08)' : '#E5E5E5'
+  const btnColor = isDark ? '#888' : '#777'
+  const hoverBg = isDark ? 'rgba(255,255,255,0.06)' : '#F0F0F0'
 
   return (
     <footer
       style={{
         height: 32,
-        background: '#FFFFFF',
-        borderTop: '1px solid #EBEBEB',
+        background: bg,
+        borderTop: border,
         display: 'flex',
         alignItems: 'center',
         padding: '0 12px',
@@ -39,31 +68,31 @@ export function BottomBar({ onZoomIn, onZoomOut, onResetZoom }: BottomBarProps) 
       <div
         style={{
           fontSize: 11,
-          color: '#999',
+          color: mutedColor,
           display: 'flex',
           alignItems: 'center',
           gap: 4,
         }}
       >
-        <span style={{ color: '#CCC' }}>Tool:</span>
-        <span style={{ color: '#555', fontWeight: 500 }}>{TOOL_LABELS[tool] ?? tool}</span>
+        <span style={{ color: labelColor }}>Tool:</span>
+        <span style={{ color: valueColor, fontWeight: 500 }}>{TOOL_LABELS[tool] ?? tool}</span>
       </div>
 
       <div
         style={{
           width: 1,
           height: 14,
-          background: '#E5E5E5',
+          background: dividerColor,
           margin: '0 10px',
         }}
       />
 
       {/* Object count */}
-      <div style={{ fontSize: 11, color: '#999' }}>
-        <span style={{ color: '#CCC' }}>Objects:</span>{' '}
-        <span style={{ color: '#555', fontWeight: 500 }}>{objects.length}</span>
+      <div style={{ fontSize: 11, color: mutedColor }}>
+        <span style={{ color: labelColor }}>Objects:</span>{' '}
+        <span style={{ color: valueColor, fontWeight: 500 }}>{objects.length}</span>
         {selectedId && (
-          <span style={{ color: '#0057FF', marginLeft: 6 }}>• 1 selected</span>
+          <span style={{ color: '#2563EB', marginLeft: 6 }}>• 1 selected</span>
         )}
       </div>
 
@@ -85,10 +114,10 @@ export function BottomBar({ onZoomIn, onZoomOut, onResetZoom }: BottomBarProps) 
             background: 'none',
             borderRadius: 4,
             cursor: 'pointer',
-            color: '#777',
+            color: btnColor,
           }}
           onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.background = '#F0F0F0'
+            ;(e.currentTarget as HTMLButtonElement).style.background = hoverBg
           }}
           onMouseLeave={(e) => {
             ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
@@ -113,10 +142,10 @@ export function BottomBar({ onZoomIn, onZoomOut, onResetZoom }: BottomBarProps) 
             fontSize: 11,
             fontFamily: "'JetBrains Mono', monospace",
             fontWeight: 500,
-            color: '#555',
+            color: valueColor,
           }}
           onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.background = '#F0F0F0'
+            ;(e.currentTarget as HTMLButtonElement).style.background = hoverBg
           }}
           onMouseLeave={(e) => {
             ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
@@ -138,10 +167,10 @@ export function BottomBar({ onZoomIn, onZoomOut, onResetZoom }: BottomBarProps) 
             background: 'none',
             borderRadius: 4,
             cursor: 'pointer',
-            color: '#777',
+            color: btnColor,
           }}
           onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.background = '#F0F0F0'
+            ;(e.currentTarget as HTMLButtonElement).style.background = hoverBg
           }}
           onMouseLeave={(e) => {
             ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
@@ -163,10 +192,10 @@ export function BottomBar({ onZoomIn, onZoomOut, onResetZoom }: BottomBarProps) 
             background: 'none',
             borderRadius: 4,
             cursor: 'pointer',
-            color: '#777',
+            color: btnColor,
           }}
           onMouseEnter={(e) => {
-            ;(e.currentTarget as HTMLButtonElement).style.background = '#F0F0F0'
+            ;(e.currentTarget as HTMLButtonElement).style.background = hoverBg
           }}
           onMouseLeave={(e) => {
             ;(e.currentTarget as HTMLButtonElement).style.background = 'none'

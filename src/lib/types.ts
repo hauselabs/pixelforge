@@ -1,6 +1,6 @@
 export interface CanvasObject {
   id: string
-  type: 'rect' | 'circle' | 'text' | 'line'
+  type: 'rect' | 'circle' | 'text' | 'line' | 'frame'
   x: number
   y: number
   width?: number
@@ -13,9 +13,11 @@ export interface CanvasObject {
   strokeWidth: number
   opacity: number
   rotation: number
+  // Frame-specific
+  frameName?: string
 }
 
-export type Tool = 'select' | 'rect' | 'circle' | 'text' | 'line'
+export type Tool = 'select' | 'hand' | 'rect' | 'circle' | 'text' | 'line' | 'frame'
 export type Mode = 'local' | 'collaborate'
 
 export interface GradientInfo {
@@ -36,3 +38,10 @@ export function parseGradient(fill: string): GradientInfo | null {
 export function isGradient(fill: string): boolean {
   return fill?.startsWith('linear-gradient') || fill?.startsWith('radial-gradient')
 }
+
+// Frame presets
+export const FRAME_PRESETS = [
+  { name: 'Desktop', width: 1440, height: 900 },
+  { name: 'Mobile', width: 390, height: 844 },
+  { name: 'Tablet', width: 768, height: 1024 },
+] as const

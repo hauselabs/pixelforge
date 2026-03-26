@@ -13,10 +13,91 @@ function getSurf(): SurfInstance {
   return _surf
 }
 
+/** Helper: create a shape object from params + type */
+function buildShapeObject(
+  type: CanvasObject['type'],
+  params: Record<string, unknown>
+): CanvasObject {
+  const base = {
+    id: crypto.randomUUID(),
+    type,
+    x: (params.x as number) ?? 100,
+    y: (params.y as number) ?? 100,
+    opacity: (params.opacity as number) ?? 1,
+    rotation: (params.rotation as number) ?? 0,
+  }
+
+  switch (type) {
+    case 'rect':
+      return {
+        ...base,
+        width: (params.width as number) ?? 200,
+        height: (params.height as number) ?? 150,
+        fill: (params.fill as string) ?? '#2563EB',
+        stroke: (params.stroke as string) ?? '',
+        strokeWidth: (params.strokeWidth as number) ?? 0,
+      }
+    case 'circle':
+      return {
+        ...base,
+        x: (params.x as number) ?? 200,
+        y: (params.y as number) ?? 200,
+        radius: (params.radius as number) ?? 80,
+        fill: (params.fill as string) ?? '#00C9B1',
+        stroke: (params.stroke as string) ?? '',
+        strokeWidth: (params.strokeWidth as number) ?? 0,
+      }
+    case 'text':
+      return {
+        ...base,
+        text: (params.text as string) ?? 'Hello',
+        fontSize: (params.fontSize as number) ?? 24,
+        fill: (params.fill as string) ?? '#0A0A0A',
+        stroke: '',
+        strokeWidth: 0,
+      }
+    case 'line':
+      return {
+        ...base,
+        x: (params.x as number) ?? 50,
+        y: (params.y as number) ?? 50,
+        width: (params.width as number) ?? 200,
+        fill: 'transparent',
+        stroke: (params.stroke as string) ?? '#0A0A0A',
+        strokeWidth: (params.strokeWidth as number) ?? 2,
+      }
+    case 'frame':
+      return {
+        ...base,
+        width: (params.width as number) ?? 1440,
+        height: (params.height as number) ?? 900,
+        fill: (params.fill as string) ?? '#FFFFFF',
+        stroke: (params.stroke as string) ?? '#E0E0E0',
+        strokeWidth: (params.strokeWidth as number) ?? 1,
+        frameName: (params.frameName as string) ?? 'Frame',
+      }
+    default:
+      return {
+        ...base,
+        width: 200,
+        height: 150,
+        fill: (params.fill as string) ?? '#2563EB',
+        stroke: (params.stroke as string) ?? '',
+        strokeWidth: (params.strokeWidth as number) ?? 0,
+      }
+  }
+}
+
+/** Push object to state + broadcast */
+function pushObject(obj: CanvasObject): void {
+  canvasState = [...canvasState, obj]
+  getSurf().live.setState('canvas', { objects: canvasState })
+}
+
 export const surfPromise: Promise<SurfInstance> = createSurf({
   name: 'PixelForge',
   description: 'AI design tool — create graphics through typed Surf commands. Add shapes, text, and designs to a shared canvas.',
-  version: '1.0.0',
+  version: '2.0.0',
 
   live: {
     enabled: true,
@@ -32,6 +113,52 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
       },
     },
 
+    'canvas.export': {
+      description: 'Export the full canvas state as a JSON snapshot with metadata. Use this to save or reconstruct a design.',
+      hints: { idempotent: true, sideEffects: false },
+      run: async () => {
+        return {
+          format: 'pixelforge-v2',
+          exportedAt: new Date().toISOString(),
+          objectCount: canvasState.length,
+          objects: canvasState.map((obj) => ({ ...obj })),
+        }
+      },
+    },
+
+    'canvas.addShape': {
+      description: 'Add any shape to the canvas — unified endpoint. Accepts type (rect, circle, text, line, frame) and all shape-specific params.',
+      params: {
+        type: { type: 'string', required: true, description: 'Shape type: rect, circle, text, line, or frame' },
+        x: { type: 'number', required: false, description: 'X position' },
+        y: { type: 'number', required: false, description: 'Y position' },
+        width: { type: 'number', required: false, description: 'Width (rect/line/frame)' },
+        height: { type: 'number', required: false, description: 'Height (rect/frame)' },
+        radius: { type: 'number', required: false, description: 'Radius (circle)' },
+        fill: { type: 'string', required: false, description: 'Fill color (hex)' },
+        stroke: { type: 'string', required: false, description: 'Stroke color' },
+        strokeWidth: { type: 'number', required: false, description: 'Stroke width' },
+        opacity: { type: 'number', required: false, description: '0.0–1.0' },
+        rotation: { type: 'number', required: false, description: 'Rotation in degrees' },
+        text: { type: 'string', required: false, description: 'Text content (text type only)' },
+        fontSize: { type: 'number', required: false, description: 'Font size (text type only)' },
+        frameName: { type: 'string', required: false, description: 'Frame label (frame type only)' },
+      },
+      run: async (params) => {
+        const shapeType = params.type as string
+        const validTypes = ['rect', 'circle', 'text', 'line', 'frame']
+        if (!validTypes.includes(shapeType)) {
+          return { ok: false, error: `Invalid type "${shapeType}". Must be one of: ${validTypes.join(', ')}` }
+        }
+        if (shapeType === 'text' && !params.text) {
+          return { ok: false, error: 'Text shapes require a "text" parameter' }
+        }
+        const obj = buildShapeObject(shapeType as CanvasObject['type'], params)
+        pushObject(obj)
+        return { ok: true, object: obj }
+      },
+    },
+
     'canvas.addRect': {
       description: 'Add a rectangle to the canvas',
       params: {
@@ -39,28 +166,15 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
         y: { type: 'number', required: false, default: 100, description: 'Y position' },
         width: { type: 'number', required: false, default: 200, description: 'Width in pixels' },
         height: { type: 'number', required: false, default: 150, description: 'Height in pixels' },
-        fill: { type: 'string', required: false, default: '#0057FF', description: 'Fill color (hex)' },
+        fill: { type: 'string', required: false, default: '#2563EB', description: 'Fill color (hex)' },
         stroke: { type: 'string', required: false, default: '', description: 'Stroke/border color' },
         strokeWidth: { type: 'number', required: false, default: 0, description: 'Border width' },
         opacity: { type: 'number', required: false, default: 1, description: '0.0–1.0' },
         rotation: { type: 'number', required: false, default: 0, description: 'Rotation in degrees' },
       },
       run: async (params) => {
-        const obj: CanvasObject = {
-          id: crypto.randomUUID(),
-          type: 'rect',
-          x: params.x as number,
-          y: params.y as number,
-          width: params.width as number,
-          height: params.height as number,
-          fill: params.fill as string,
-          stroke: params.stroke as string,
-          strokeWidth: params.strokeWidth as number,
-          opacity: params.opacity as number,
-          rotation: params.rotation as number,
-        }
-        canvasState = [...canvasState, obj]
-        getSurf().live.setState('canvas', { objects: canvasState })
+        const obj = buildShapeObject('rect', params)
+        pushObject(obj)
         return { ok: true, object: obj }
       },
     },
@@ -78,20 +192,8 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
         rotation: { type: 'number', required: false, default: 0 },
       },
       run: async (params) => {
-        const obj: CanvasObject = {
-          id: crypto.randomUUID(),
-          type: 'circle',
-          x: params.x as number,
-          y: params.y as number,
-          radius: params.radius as number,
-          fill: params.fill as string,
-          stroke: params.stroke as string,
-          strokeWidth: params.strokeWidth as number,
-          opacity: params.opacity as number,
-          rotation: params.rotation as number,
-        }
-        canvasState = [...canvasState, obj]
-        getSurf().live.setState('canvas', { objects: canvasState })
+        const obj = buildShapeObject('circle', params)
+        pushObject(obj)
         return { ok: true, object: obj }
       },
     },
@@ -108,21 +210,8 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
         rotation: { type: 'number', required: false, default: 0 },
       },
       run: async (params) => {
-        const obj: CanvasObject = {
-          id: crypto.randomUUID(),
-          type: 'text',
-          x: params.x as number,
-          y: params.y as number,
-          text: params.text as string,
-          fontSize: params.fontSize as number,
-          fill: params.fill as string,
-          stroke: '',
-          strokeWidth: 0,
-          opacity: params.opacity as number,
-          rotation: params.rotation as number,
-        }
-        canvasState = [...canvasState, obj]
-        getSurf().live.setState('canvas', { objects: canvasState })
+        const obj = buildShapeObject('text', params)
+        pushObject(obj)
         return { ok: true, object: obj }
       },
     },
@@ -139,20 +228,8 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
         opacity: { type: 'number', required: false, default: 1 },
       },
       run: async (params) => {
-        const obj: CanvasObject = {
-          id: crypto.randomUUID(),
-          type: 'line',
-          x: params.x as number,
-          y: params.y as number,
-          width: params.width as number,
-          fill: 'transparent',
-          stroke: params.stroke as string,
-          strokeWidth: params.strokeWidth as number,
-          opacity: params.opacity as number,
-          rotation: params.rotation as number,
-        }
-        canvasState = [...canvasState, obj]
-        getSurf().live.setState('canvas', { objects: canvasState })
+        const obj = buildShapeObject('line', params)
+        pushObject(obj)
         return { ok: true, object: obj }
       },
     },
@@ -173,14 +250,14 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
         rotation: { type: 'number', required: false, description: 'Degrees' },
         text: { type: 'string', required: false, description: 'For text objects only' },
         fontSize: { type: 'number', required: false, description: 'For text objects only' },
+        frameName: { type: 'string', required: false, description: 'For frame objects only' },
       },
       run: async (params) => {
         const idx = canvasState.findIndex((o) => o.id === params.id)
         if (idx === -1) return { ok: false, error: 'Object not found' }
 
-        // Only apply defined (non-undefined) fields
         const updates: Partial<CanvasObject> = {}
-        const keys: (keyof CanvasObject)[] = ['x', 'y', 'width', 'height', 'radius', 'fill', 'stroke', 'strokeWidth', 'opacity', 'rotation', 'text', 'fontSize']
+        const keys: (keyof CanvasObject)[] = ['x', 'y', 'width', 'height', 'radius', 'fill', 'stroke', 'strokeWidth', 'opacity', 'rotation', 'text', 'fontSize', 'frameName']
         for (const key of keys) {
           if (params[key] !== undefined) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -222,7 +299,7 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
       params: {
         id: { type: 'string', required: true, description: 'Object ID' },
         type: { type: 'string', required: false, default: 'linear', description: '"linear" or "radial"' },
-        startColor: { type: 'string', required: true, description: 'Start color (hex, e.g. #0057FF)' },
+        startColor: { type: 'string', required: true, description: 'Start color (hex, e.g. #2563EB)' },
         endColor: { type: 'string', required: true, description: 'End color (hex, e.g. #00C9B1)' },
       },
       run: async (params) => {

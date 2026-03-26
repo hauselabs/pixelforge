@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { MousePointer2, Square, Circle, Type, Minus, ZoomIn, ZoomOut } from 'lucide-react'
+import { MousePointer2, Square, Circle, Type, Minus, Hand, Frame, ZoomIn, ZoomOut } from 'lucide-react'
 import { useCanvasStore } from '@/lib/store'
 import type { Tool } from '@/lib/types'
 
@@ -14,6 +14,8 @@ interface ToolItem {
 
 const DRAW_TOOLS: ToolItem[] = [
   { id: 'select', icon: MousePointer2, label: 'Select', shortcut: 'V' },
+  { id: 'hand', icon: Hand, label: 'Hand', shortcut: 'H' },
+  { id: 'frame', icon: Frame, label: 'Frame', shortcut: 'F' },
   { id: 'rect', icon: Square, label: 'Rectangle', shortcut: 'R' },
   { id: 'circle', icon: Circle, label: 'Circle', shortcut: 'O' },
   { id: 'text', icon: Type, label: 'Text', shortcut: 'T' },
@@ -61,7 +63,7 @@ function ToolBtn({
         className,
         'flex items-center justify-center rounded-xl',
         'transition-all duration-150 ease-out',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF]',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]',
         !active && 'hover:scale-[1.05]',
       ]
         .filter(Boolean)
@@ -69,9 +71,9 @@ function ToolBtn({
       style={
         active
           ? {
-              background: '#0057FF',
+              background: '#2563EB',
               color: '#ffffff',
-              boxShadow: '0 0 0 1px rgba(0,87,255,0.3), 0 2px 8px rgba(0,87,255,0.35)',
+              boxShadow: '0 0 0 1px rgba(37,99,235,0.3), 0 2px 8px rgba(37,99,235,0.35)',
             }
           : {
               background: 'transparent',
@@ -160,7 +162,7 @@ export function Toolbar({ onZoomIn, onZoomOut, onResetZoom }: ToolbarProps) {
         <button
           onClick={onResetZoom}
           title="Reset zoom (100%)"
-          className="h-8 px-1 min-w-[40px] flex items-center justify-center rounded-xl transition-all duration-150 font-mono text-[10px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0057FF]"
+          className="h-8 px-1 min-w-[40px] flex items-center justify-center rounded-xl transition-all duration-150 font-mono text-[10px] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
           style={zoomBtnStyle}
           onMouseEnter={(e) => {
             ;(e.currentTarget as HTMLButtonElement).style.background = isDark
