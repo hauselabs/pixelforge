@@ -98,6 +98,7 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
   name: 'PixelForge',
   description: 'AI design tool — create graphics through typed Surf commands. Add shapes, text, and designs to a shared canvas.',
   version: '2.0.0',
+  baseUrl: '/api/surf',
 
   live: {
     enabled: true,
