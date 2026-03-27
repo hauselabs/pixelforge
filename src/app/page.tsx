@@ -37,6 +37,11 @@ const SurfBadgeWrapper = dynamic(
   { ssr: false }
 )
 
+const SurfCommands = dynamic(
+  () => import('@/components/SurfCommands').then((mod) => mod.SurfCommands),
+  { ssr: false }
+)
+
 export default function PixelForgePage() {
   const stageRef = useRef<Konva.Stage | null>(null)
   const { mode, stageScale, setStageScale, setStagePos, connectionStatus, objects } =
@@ -118,7 +123,8 @@ export default function PixelForgePage() {
         onResetZoom={handleResetZoom}
       />
 
-      {/* Surf Badge */}
+      {/* Surf: local command handlers + badge */}
+      <SurfCommands />
       <SurfBadgeWrapper />
     </div>
   )

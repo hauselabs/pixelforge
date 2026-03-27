@@ -1,103 +1,14 @@
 import { createSurf, type SurfInstance } from '@surfjs/core'
 import type { CanvasObject } from './types'
 
-// In-memory canvas state for collaborative mode (server-side)
-let canvasState: CanvasObject[] = []
-
-/** Get current canvas state — used by export endpoint */
-export function getCanvasState(): CanvasObject[] {
-  return canvasState
-}
+/** Server-side stub for browser-only commands */
+const browserOnly = async () => ({
+  ok: false,
+  error: 'This command executes in the browser only. Use a browser agent or window.surf.execute() in the page.',
+})
 
 // Surf instance — initialized lazily
 let _surf: SurfInstance | null = null
-
-// We use a getter so commands can reference the instance after init
-function getSurf(): SurfInstance {
-  if (!_surf) throw new Error('Surf instance not yet initialized')
-  return _surf
-}
-
-/** Helper: create a shape object from params + type */
-function buildShapeObject(
-  type: CanvasObject['type'],
-  params: Record<string, unknown>
-): CanvasObject {
-  const base = {
-    id: crypto.randomUUID(),
-    type,
-    x: (params.x as number) ?? 100,
-    y: (params.y as number) ?? 100,
-    opacity: (params.opacity as number) ?? 1,
-    rotation: (params.rotation as number) ?? 0,
-  }
-
-  switch (type) {
-    case 'rect':
-      return {
-        ...base,
-        width: (params.width as number) ?? 200,
-        height: (params.height as number) ?? 150,
-        fill: (params.fill as string) ?? '#2563EB',
-        stroke: (params.stroke as string) ?? '',
-        strokeWidth: (params.strokeWidth as number) ?? 0,
-      }
-    case 'circle':
-      return {
-        ...base,
-        x: (params.x as number) ?? 200,
-        y: (params.y as number) ?? 200,
-        radius: (params.radius as number) ?? 80,
-        fill: (params.fill as string) ?? '#00C9B1',
-        stroke: (params.stroke as string) ?? '',
-        strokeWidth: (params.strokeWidth as number) ?? 0,
-      }
-    case 'text':
-      return {
-        ...base,
-        text: (params.text as string) ?? 'Hello',
-        fontSize: (params.fontSize as number) ?? 24,
-        fill: (params.fill as string) ?? '#0A0A0A',
-        stroke: '',
-        strokeWidth: 0,
-      }
-    case 'line':
-      return {
-        ...base,
-        x: (params.x as number) ?? 50,
-        y: (params.y as number) ?? 50,
-        width: (params.width as number) ?? 200,
-        fill: 'transparent',
-        stroke: (params.stroke as string) ?? '#0A0A0A',
-        strokeWidth: (params.strokeWidth as number) ?? 2,
-      }
-    case 'frame':
-      return {
-        ...base,
-        width: (params.width as number) ?? 1440,
-        height: (params.height as number) ?? 900,
-        fill: (params.fill as string) ?? '#FFFFFF',
-        stroke: (params.stroke as string) ?? '#E0E0E0',
-        strokeWidth: (params.strokeWidth as number) ?? 1,
-        frameName: (params.frameName as string) ?? 'Frame',
-      }
-    default:
-      return {
-        ...base,
-        width: 200,
-        height: 150,
-        fill: (params.fill as string) ?? '#2563EB',
-        stroke: (params.stroke as string) ?? '',
-        strokeWidth: (params.strokeWidth as number) ?? 0,
-      }
-  }
-}
-
-/** Push object to state + broadcast */
-function pushObject(obj: CanvasObject): void {
-  canvasState = [...canvasState, obj]
-  getSurf().live.setState('canvas', { objects: canvasState })
-}
 
 export const surfPromise: Promise<SurfInstance> = createSurf({
   name: 'PixelForge',
@@ -111,47 +22,54 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
   },
 
   commands: {
+    // ── Read-only commands (keep server-side run handlers) ──────────
+
     'canvas.getState': {
-      description: 'Get the current canvas state (all objects)',
-      hints: { idempotent: true, sideEffects: false },
+      description: 'Get the current canvas state (all objects). In browser mode, returns live Zustand state. Via CLI/server, returns empty (state lives in browser).',
+      hints: { execution: 'any', idempotent: true, sideEffects: false },
       run: async () => {
-        return { objects: canvasState }
+        // Server-side fallback: state lives in browser now, so headless gets empty
+        return { objects: [], note: 'Canvas state lives in the browser. Use a browser agent for live state.' }
       },
     },
 
     'canvas.export': {
-      description: 'Export the canvas as a PNG image. Returns a download URL. Use curl to save: curl -o design.png <pngUrl>',
+      description: 'Export the canvas as a PNG image or JSON. In browser mode, pass objects param. For server-side, POST objects to /api/export.',
       params: {
         width: { type: 'number', required: false, default: 1440, description: 'Export width in pixels' },
         height: { type: 'number', required: false, default: 900, description: 'Export height in pixels' },
         dark: { type: 'boolean', required: false, default: false, description: 'Use dark background' },
         format: { type: 'string', required: false, default: 'png', description: '"png" for image URL, "json" for raw data' },
+        objects: { type: 'array', required: false, description: 'Canvas objects to export (pass from browser state)' },
       },
-      hints: { idempotent: true, sideEffects: false },
+      hints: { execution: 'any', idempotent: true, sideEffects: false },
       run: async (params) => {
         const width = (params.width as number) || 1440
         const height = (params.height as number) || 900
         const dark = params.dark === true
+        const objects = (params.objects as CanvasObject[]) || []
 
         if (params.format === 'json') {
           return {
             format: 'pixelforge-v2',
             exportedAt: new Date().toISOString(),
-            objectCount: canvasState.length,
-            objects: canvasState.map((obj) => ({ ...obj })),
+            objectCount: objects.length,
+            objects: objects.map((obj) => ({ ...obj })),
           }
         }
 
         const qs = `width=${width}&height=${height}${dark ? '&dark=true' : ''}`
 
         return {
-          objectCount: canvasState.length,
+          objectCount: objects.length,
           exportedAt: new Date().toISOString(),
           downloadPath: `/api/export?${qs}`,
-          hint: `Download PNG with: curl -o design.png "https://pixelforge-pearl.vercel.app/api/export?${qs}"`,
+          hint: `For server-side PNG export, POST objects to /api/export. For browser export, use Konva's toDataURL().`,
         }
       },
     },
+
+    // ── Mutation commands (browser-only execution, declaration-only on server) ──
 
     'canvas.addShape': {
       description: 'Add any shape to the canvas — unified endpoint. Accepts type (rect, circle, text, line, frame) and all shape-specific params.',
@@ -171,19 +89,8 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
         fontSize: { type: 'number', required: false, description: 'Font size (text type only)' },
         frameName: { type: 'string', required: false, description: 'Frame label (frame type only)' },
       },
-      run: async (params) => {
-        const shapeType = params.type as string
-        const validTypes = ['rect', 'circle', 'text', 'line', 'frame']
-        if (!validTypes.includes(shapeType)) {
-          return { ok: false, error: `Invalid type "${shapeType}". Must be one of: ${validTypes.join(', ')}` }
-        }
-        if (shapeType === 'text' && !params.text) {
-          return { ok: false, error: 'Text shapes require a "text" parameter' }
-        }
-        const obj = buildShapeObject(shapeType as CanvasObject['type'], params)
-        pushObject(obj)
-        return { ok: true, object: obj }
-      },
+      hints: { execution: 'browser', sideEffects: true },
+      run: browserOnly,
     },
 
     'canvas.addRect': {
@@ -199,11 +106,8 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
         opacity: { type: 'number', required: false, default: 1, description: '0.0–1.0' },
         rotation: { type: 'number', required: false, default: 0, description: 'Rotation in degrees' },
       },
-      run: async (params) => {
-        const obj = buildShapeObject('rect', params)
-        pushObject(obj)
-        return { ok: true, object: obj }
-      },
+      hints: { execution: 'browser', sideEffects: true },
+      run: browserOnly,
     },
 
     'canvas.addCircle': {
@@ -218,11 +122,8 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
         opacity: { type: 'number', required: false, default: 1, description: '0.0–1.0' },
         rotation: { type: 'number', required: false, default: 0 },
       },
-      run: async (params) => {
-        const obj = buildShapeObject('circle', params)
-        pushObject(obj)
-        return { ok: true, object: obj }
-      },
+      hints: { execution: 'browser', sideEffects: true },
+      run: browserOnly,
     },
 
     'canvas.addText': {
@@ -236,11 +137,8 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
         opacity: { type: 'number', required: false, default: 1 },
         rotation: { type: 'number', required: false, default: 0 },
       },
-      run: async (params) => {
-        const obj = buildShapeObject('text', params)
-        pushObject(obj)
-        return { ok: true, object: obj }
-      },
+      hints: { execution: 'browser', sideEffects: true },
+      run: browserOnly,
     },
 
     'canvas.addLine': {
@@ -254,11 +152,8 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
         rotation: { type: 'number', required: false, default: 0, description: 'Rotation in degrees' },
         opacity: { type: 'number', required: false, default: 1 },
       },
-      run: async (params) => {
-        const obj = buildShapeObject('line', params)
-        pushObject(obj)
-        return { ok: true, object: obj }
-      },
+      hints: { execution: 'browser', sideEffects: true },
+      run: browserOnly,
     },
 
     'canvas.updateObject': {
@@ -279,25 +174,8 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
         fontSize: { type: 'number', required: false, description: 'For text objects only' },
         frameName: { type: 'string', required: false, description: 'For frame objects only' },
       },
-      run: async (params) => {
-        const idx = canvasState.findIndex((o) => o.id === params.id)
-        if (idx === -1) return { ok: false, error: 'Object not found' }
-
-        const updates: Partial<CanvasObject> = {}
-        const keys: (keyof CanvasObject)[] = ['x', 'y', 'width', 'height', 'radius', 'fill', 'stroke', 'strokeWidth', 'opacity', 'rotation', 'text', 'fontSize', 'frameName']
-        for (const key of keys) {
-          if (params[key] !== undefined) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ;(updates as any)[key] = params[key]
-          }
-        }
-
-        const newState = [...canvasState]
-        newState[idx] = { ...newState[idx], ...updates }
-        canvasState = newState
-        getSurf().live.setState('canvas', { objects: canvasState })
-        return { ok: true, object: canvasState[idx] }
-      },
+      hints: { execution: 'browser', sideEffects: true },
+      run: browserOnly,
     },
 
     'canvas.removeObject': {
@@ -305,20 +183,14 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
       params: {
         id: { type: 'string', required: true, description: 'Object ID to remove' },
       },
-      run: async (params) => {
-        canvasState = canvasState.filter((o) => o.id !== params.id)
-        getSurf().live.setState('canvas', { objects: canvasState })
-        return { ok: true }
-      },
+      hints: { execution: 'browser', sideEffects: true },
+      run: browserOnly,
     },
 
     'canvas.clear': {
       description: 'Clear the entire canvas — removes all objects',
-      run: async () => {
-        canvasState = []
-        getSurf().live.setState('canvas', { objects: canvasState })
-        return { ok: true }
-      },
+      hints: { execution: 'browser', sideEffects: true },
+      run: browserOnly,
     },
 
     'canvas.setGradient': {
@@ -329,19 +201,8 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
         startColor: { type: 'string', required: true, description: 'Start color (hex, e.g. #2563EB)' },
         endColor: { type: 'string', required: true, description: 'End color (hex, e.g. #00C9B1)' },
       },
-      run: async (params) => {
-        const idx = canvasState.findIndex((o) => o.id === params.id)
-        if (idx === -1) return { ok: false, error: 'Object not found' }
-        const gradient =
-          params.type === 'radial'
-            ? `radial-gradient(${params.startColor}, ${params.endColor})`
-            : `linear-gradient(135deg, ${params.startColor}, ${params.endColor})`
-        const newState = [...canvasState]
-        newState[idx] = { ...newState[idx], fill: gradient }
-        canvasState = newState
-        getSurf().live.setState('canvas', { objects: canvasState })
-        return { ok: true, object: canvasState[idx] }
-      },
+      hints: { execution: 'browser', sideEffects: true },
+      run: browserOnly,
     },
 
     'canvas.alignObjects': {
@@ -354,35 +215,8 @@ export const surfPromise: Promise<SurfInstance> = createSurf({
           description: '"center", "left", "right", "top", "bottom"',
         },
       },
-      run: async (params) => {
-        const cx = 400
-        const cy = 300
-        const alignment = (params.alignment as string) || 'center'
-
-        const newState = canvasState.map((obj) => {
-          const w = obj.width ?? (obj.radius ? obj.radius * 2 : 50)
-          const h = obj.height ?? (obj.radius ? obj.radius * 2 : 50)
-          let x = obj.x
-          let y = obj.y
-          if (alignment === 'center') {
-            x = cx - w / 2
-            y = cy - h / 2
-          } else if (alignment === 'left') {
-            x = 20
-          } else if (alignment === 'right') {
-            x = 800 - w - 20
-          } else if (alignment === 'top') {
-            y = 20
-          } else if (alignment === 'bottom') {
-            y = 600 - h - 20
-          }
-          return { ...obj, x, y }
-        })
-
-        canvasState = newState
-        getSurf().live.setState('canvas', { objects: canvasState })
-        return { ok: true, count: canvasState.length }
-      },
+      hints: { execution: 'browser', sideEffects: true },
+      run: browserOnly,
     },
   },
 }).then((instance) => {

@@ -12,14 +12,17 @@ importers:
         specifier: ^0.1.97
         version: 0.1.97
       '@surfjs/core':
-        specifier: ^0.3.9
-        version: 0.3.9
+        specifier: ^0.3.12
+        version: 0.3.12
       '@surfjs/next':
         specifier: ^0.3.9
-        version: 0.3.9(@surfjs/core@0.3.9)(next@16.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+        version: 0.3.9(@surfjs/core@0.3.12)(next@16.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       '@surfjs/react':
-        specifier: ^0.3.9
-        version: 0.3.9(react@19.2.4)
+        specifier: ^0.4.3
+        version: 0.4.3(react@19.2.4)
+      '@surfjs/web':
+        specifier: ^0.1.0
+        version: 0.1.0
       '@tailwindcss/postcss':
         specifier: ^4.2.2
         version: 4.2.2
@@ -375,8 +378,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@surfjs/core@0.3.9':
-    resolution: {integrity: sha512-IhSLC/raVte5AONiYhWhVzsrHZtL28cdZyOgoHl3rRPWHOzqX7RAVfhHNSW04a2UCc+PWaPiJUqlka2gXtr2lw==}
+  '@surfjs/core@0.3.12':
+    resolution: {integrity: sha512-DqNFy06AWsmVnHwojIhjbt5OqM4Q4dCr9+0+XqybnoacTl3g4opXhbmiyR8lBHUtBlMkSacelKG0Cd5xxxPTSQ==}
     peerDependencies:
       fastify: '>=4.0.0'
       hono: '>=4.0.0'
@@ -395,10 +398,13 @@ packages:
       '@surfjs/core': '>=0.2.0'
       next: '>=13.0.0'
 
-  '@surfjs/react@0.3.9':
-    resolution: {integrity: sha512-anH1PLJKS6j2aZHgkXeNzVwK4ioo/J8Tl5w8jc/X+cyRx7VVfrFD30Y3WKDsjXObW4LAxgRJqYcm8nFAABpSmw==}
+  '@surfjs/react@0.4.3':
+    resolution: {integrity: sha512-RoUR3rMPCZfhlujgFtWD6QN6MTp1Tf1Zqq63AXkm42eFWNaX30OtrshqY5fFBuKTljoM2c22cEP1jUCMLl4wSg==}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
+
+  '@surfjs/web@0.1.0':
+    resolution: {integrity: sha512-VeMhGbKiVnc5nTotd76NGfr/CbwrQmAwinXJXmOHa+A6E+6U+1kKTrWggR6Vxt5RYyuBHEMmPugczYF04GwRTw==}
 
   '@swc/helpers@0.5.15':
     resolution: {integrity: sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g==}
@@ -977,16 +983,19 @@ snapshots:
   '@next/swc-win32-x64-msvc@16.2.1':
     optional: true
 
-  '@surfjs/core@0.3.9': {}
+  '@surfjs/core@0.3.12': {}
 
-  '@surfjs/next@0.3.9(@surfjs/core@0.3.9)(next@16.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
+  '@surfjs/next@0.3.9(@surfjs/core@0.3.12)(next@16.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
     dependencies:
-      '@surfjs/core': 0.3.9
+      '@surfjs/core': 0.3.12
       next: 16.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
 
-  '@surfjs/react@0.3.9(react@19.2.4)':
+  '@surfjs/react@0.4.3(react@19.2.4)':
     dependencies:
+      '@surfjs/web': 0.1.0
       react: 19.2.4
+
+  '@surfjs/web@0.1.0': {}
 
   '@swc/helpers@0.5.15':
     dependencies:

@@ -16,9 +16,10 @@
   "packageManager": "pnpm@10.29.3",
   "dependencies": {
     "@napi-rs/canvas": "^0.1.97",
-    "@surfjs/core": "^0.3.9",
+    "@surfjs/core": "^0.3.12",
     "@surfjs/next": "^0.3.9",
-    "@surfjs/react": "^0.3.9",
+    "@surfjs/react": "^0.4.3",
+    "@surfjs/web": "^0.1.0",
     "@tailwindcss/postcss": "^4.2.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
